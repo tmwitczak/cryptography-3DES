@@ -40,7 +40,7 @@ public class Cryptography3DES
 	private final Font font2 = new Font(Font.SANS_SERIF, Font.BOLD, 12);
 	// > key parameters
 	private Key.KeyLength keyLength = Key.KeyLength.LONG;
-	private KeyFormatter.Display keyDisplay = KeyFormatter.Display.TEXT;
+	private Key.Display keyDisplay = Key.Display.TEXT;
 	// > key
 	private Key key = null;
 
@@ -96,9 +96,9 @@ public class Cryptography3DES
 		contentPane.add(labelKey, "cell 0 0,alignx center");
 
 		labelKeyInfo.setFont(font2);
-		labelKeyInfo.setForeground(color3);
+		labelKeyInfo.setForeground(color5);
 		labelKeyInfo.setHorizontalAlignment(SwingConstants.LEFT);
-		contentPane.add(labelKeyInfo, "cell 1 1,alignx left");
+		contentPane.add(labelKeyInfo, "cell 1 1,alignx left,aligny center");
 
 		labelPlainText.setFont(font2);
 		labelPlainText.setForeground(color3);
@@ -175,20 +175,26 @@ public class Cryptography3DES
 						buttonEncrypt.setEnabled(false);
 						buttonDecrypt.setEnabled(false);
 						plainTextArea.setEnabled(false);
+						menuItemEncryptFile.setEnabled(false);
+						menuItemDecryptFile.setEnabled(false);
 
 						key = null;
 					}
-					else
+					else if(keyText.length() > 1 && key == null)
 					{
 						labelKeyInfo.setText(" ");
 						buttonEncrypt.setEnabled(true);
 						buttonDecrypt.setEnabled(true);
 						plainTextArea.setEnabled(true);
+						menuItemEncryptFile.setEnabled(true);
+						menuItemDecryptFile.setEnabled(true);
+						
+						//labelKeyInfo.setText(keyText.length()+"");
 
 						switch (keyDisplay)
 						{
 							case TEXT:
-								key = new Key(keyLength);/*Key(keyText.getBytes(StandardCharsets.UTF_8));*/
+								key = new Key(keyText.substring(0, keyText.length()-1), keyLength, keyDisplay);
 								break;
 							case BIN:
 								key = new Key(keyLength);
@@ -198,13 +204,17 @@ public class Cryptography3DES
 								break;
 						}
 
-						labelKeyInfo.setText(key.getKeyText());
+						//labelKeyInfo.setText(keyText.length()+"aa");
+						//plainTextArea.setText(key.getKeyText());
 					}
 				}
 				catch (Exception e)
 				{
+					//labelKeyInfo.setEnabled(true);
 					//JOptionPane.showMessageDialog(null, e.getMessage(), "", JOptionPane.ERROR_MESSAGE);
-					plainTextArea.setText(e.getMessage());
+					//try{String keyText = event.getDocument().getText(event.getDocument().getStartPosition().getOffset(), event.getDocument().getEndPosition().getOffset());
+					//labelKeyInfo.setText(keyText.length()+"www");}catch(Exception ea) {labelKeyInfo.setText("fuck");}
+					//plainTextArea.setText(e.getMessage());
 				}
 			}
 		});
@@ -269,7 +279,7 @@ public class Cryptography3DES
 		menuKeyDisplay.add(radioButtonText);
 		radioButtonText.addActionListener(arg0 ->
 		{
-			keyDisplay = KeyFormatter.Display.TEXT;
+			keyDisplay = Key.Display.TEXT;
 			keyTextField.setText(key == null ? "" : key.getKeyText());
 			KeyFormatter.setFormatter(keyLength, keyDisplay, keyTextField);
 		});
@@ -279,7 +289,7 @@ public class Cryptography3DES
 		menuKeyDisplay.add(radioButtonBin);
 		radioButtonBin.addActionListener(arg0 ->
 		{
-			keyDisplay = KeyFormatter.Display.BIN;
+			keyDisplay = Key.Display.BIN;
 			keyTextField.setText(key == null ? "" : key.getKeyBinary());
 			KeyFormatter.setFormatter(keyLength, keyDisplay, keyTextField);
 		});
@@ -288,7 +298,7 @@ public class Cryptography3DES
 		menuKeyDisplay.add(radioButtonHex);
 		radioButtonHex.addActionListener(arg0 ->
 		{
-			keyDisplay = KeyFormatter.Display.HEX;
+			keyDisplay = Key.Display.HEX;
 			keyTextField.setText(key == null ? "" : key.getKeyHexadecimal());
 			KeyFormatter.setFormatter(keyLength, keyDisplay, keyTextField);
 		});
@@ -357,63 +367,3 @@ public class Cryptography3DES
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class KeyFormatter
-{
-	static void setFormatter(Key.KeyLength length, Display display, JFormattedTextField textField)
-	{
-		try
-		{
-			MaskFormatter maskFormatter = new MaskFormatter();
-
-			StringBuilder mask = new StringBuilder();
-			String maskPattern = null;
-
-			switch (display)
-			{
-				case TEXT:
-					maskPattern = "*";
-					break;
-				case BIN:
-					maskPattern = "********";
-					maskFormatter.setValidCharacters("01");
-					break;
-				case HEX:
-					maskPattern = "**";
-					maskFormatter.setValidCharacters("0123456789abcdefABCDEF");
-					break;
-			}
-
-			for (int i = 0; i < (length.bits / 8); i++)
-			{
-				mask.append(maskPattern);
-
-				if (!display.equals(Display.TEXT) && i < (length.bits / 8) - 1)
-					mask.append(' ');
-			}
-
-
-			maskFormatter.setMask(mask.toString());
-
-			maskFormatter.setPlaceholderCharacter('\u02FD');
-
-			// Define the factory.
-
-			DefaultFormatterFactory factory = new DefaultFormatterFactory(maskFormatter);
-
-			textField.setFormatterFactory(factory);
-
-		}
-		catch (Exception ignored)
-		{
-		}
-	}
-
-	public enum Display
-	{
-		TEXT,
-		BIN,
-		HEX;
-	}
-}
-
-
