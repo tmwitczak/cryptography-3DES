@@ -1,7 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Imports
 // > SecureRandom
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+
+import javax.swing.JFormattedTextField;
+import javax.swing.JOptionPane;
+import javax.swing.text.DefaultFormatterFactory;
+import javax.swing.text.MaskFormatter;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 64, 128 or 192 bit key used in 3DES algorithm
@@ -15,11 +21,20 @@ public class Key
 		LONG(3 * 64);
 
 		public final int bits;
+		public final int bytes;
 
 		KeyLength(int bits)
 		{
 			this.bits = bits;
+			this.bytes = bits / 8;
 		}
+	}
+	
+	public enum Display
+	{
+		TEXT,
+		BIN,
+		HEX;
 	}
 
 	// Methods
@@ -38,10 +53,24 @@ public class Key
 		// Save key
 		this.key = key.clone();
 	}
+	
+	Key(String text, KeyLength length, Display display) throws Exception
+	{
+		switch(display)
+		{
+		case TEXT:
+			if(text.length() != length.bytes)
+				throw new Exception("Key must be " + length.bits + " bits long!");
+			this.key = text.getBytes(StandardCharsets.UTF_8).clone();
+			break;
+		case BIN: break;	//TODO: implement key String to binary conversion
+		case HEX: break;	//TODO: implement key String to hex conversion
+		}
+	}
 
 	public String getKeyText()
 	{
-		return key.toString();
+		return new String(this.key); //TODO: check if conversion is valid
 	}
 
 	public String getKeyHexadecimal()
@@ -119,3 +148,58 @@ class Key56
 	}
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+class KeyFormatter
+{
+	static void setFormatter(Key.KeyLength length, Key.Display display, JFormattedTextField textField)
+	{
+		try
+		{
+			MaskFormatter maskFormatter = new MaskFormatter();
+
+			StringBuilder mask = new StringBuilder();
+			String maskPattern = null;
+
+			switch (display)
+			{
+				case TEXT:
+					maskPattern = "*";
+					break;
+				case BIN:
+					maskPattern = "********";
+					maskFormatter.setValidCharacters("01");
+					break;
+				case HEX:
+					maskPattern = "**";
+					maskFormatter.setValidCharacters("0123456789abcdefABCDEF");
+					break;
+			}
+
+			for (int i = 0; i < (length.bits / 8); i++)
+			{
+				mask.append(maskPattern);
+
+				if (!display.equals(Key.Display.TEXT) && i < (length.bits / 8) - 1)
+					mask.append(' ');
+			}
+
+
+			maskFormatter.setMask(mask.toString());
+
+			maskFormatter.setPlaceholderCharacter('\u02FD');
+
+			// Define the factory.
+
+			DefaultFormatterFactory factory = new DefaultFormatterFactory(maskFormatter);
+
+			textField.setFormatterFactory(factory);
+
+		}
+		catch (Exception ignored)
+		{
+		}
+	}
+
+	
+}
+
+
