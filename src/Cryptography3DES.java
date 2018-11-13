@@ -44,6 +44,7 @@ public class Cryptography3DES
 	// > key
 	private Key key = null;
 
+	AlgorithmDES algorithmDES = new AlgorithmDES();
 	/**
 	 * Create the frame.
 	 */
@@ -109,12 +110,12 @@ public class Cryptography3DES
 		contentPane.add(labelCipherText, "cell 0 4,alignx center");
 
 		// > Buttons
-		buttonEncrypt.addMouseListener(new MouseAdapter()
+		buttonEncrypt.addActionListener(arg0 ->
 		{
-			@Override
-			public void mouseClicked(MouseEvent arg0)
+
 			{
-				cipherTextArea.setText("Siema");
+				/*cipherTextArea.setText*/
+				algorithmDES.Encrypt(plainTextArea.getText(), new Key(keyLength));
 			}
 		});
 		buttonEncrypt.setFont(font2);
