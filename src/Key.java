@@ -29,7 +29,7 @@ public class Key
 			this.bytes = bits / 8;
 		}
 	}
-	
+
 	public enum Display
 	{
 		TEXT,
@@ -53,24 +53,48 @@ public class Key
 		// Save key
 		this.key = key.clone();
 	}
-	
+
 	Key(String text, KeyLength length, Display display) throws Exception
 	{
 		switch(display)
 		{
-		case TEXT:
-			if(text.length() != length.bytes)
-				throw new Exception("Key must be " + length.bits + " bits long!");
-			this.key = text.getBytes(StandardCharsets.UTF_8).clone();
-			break;
-		case BIN: break;	//TODO: implement key String to binary conversion
-		case HEX: break;	//TODO: implement key String to hex conversion
+			case TEXT:
+				if(text.length() != length.bytes)
+					throw new Exception("Key must be " + length.bits + " bits long!");
+				this.key = text.getBytes(StandardCharsets.UTF_8).clone();
+				break;
+			case BIN:
+				if(text.length() != length.bytes * 9)
+					System.out.println(text.length());//throw new Exception("Key must be " + length.bits + " bits long!");
+
+				this.key = new byte[length.bytes];
+
+				for(int i = 0; i < length.bytes; i++)
+					this.key[i] = (byte) Integer.parseInt(text.substring(i * 9, i * 9 + 7), 2);
+
+				break;	//TODO: implement key String to binary conversion
+			case HEX:
+				/*if(text.length() != length.bytes * 2)
+					throw new Exception("Key must be " + length.bits + " bits long!");*/
+					this.key = new byte[length.bytes];
+
+					for(int i = 0; i < length.bytes; i++)
+						this.key[i] = (byte) Integer.parseInt(text.substring(i * 3, i * 3 + 1), 16);
+				break;	//TODO: implement key String to hex conversion
 		}
 	}
 
 	public String getKeyText()
 	{
-		return new String(this.key); //TODO: check if conversion is valid
+		String str = null;
+		try
+		{
+			str = new String(this.key, StandardCharsets.UTF_8); //TODO: check if conversion is valid
+		}
+		catch(Exception e)
+		{
+		}
+		return str;
 	}
 
 	public String getKeyHexadecimal()
@@ -102,6 +126,11 @@ public class Key
 	public int getKeyLength()
 	{
 		return (key.length * 8);
+	}
+
+	public Block getKeyAsBlock()
+	{
+		return new Block(key);
 	}
 
 	private boolean checkLength(byte[] key)
@@ -199,7 +228,5 @@ class KeyFormatter
 		}
 	}
 
-	
+
 }
-
-
