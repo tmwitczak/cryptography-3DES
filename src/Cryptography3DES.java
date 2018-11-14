@@ -112,11 +112,7 @@ public class Cryptography3DES
 		// > Buttons
 		buttonEncrypt.addActionListener(arg0 ->
 		{
-
-			{
-				/*cipherTextArea.setText*/
-				algorithmDES.Encrypt(plainTextArea.getText(), new Key(keyLength));
-			}
+				cipherTextArea.setText(algorithmDES.Encrypt(plainTextArea.getText(), key));
 		});
 		buttonEncrypt.setFont(font2);
 		buttonEncrypt.setPreferredSize(new Dimension(200, 40));
@@ -189,21 +185,21 @@ public class Cryptography3DES
 						plainTextArea.setEnabled(true);
 						menuItemEncryptFile.setEnabled(true);
 						menuItemDecryptFile.setEnabled(true);
-						
+
 						//labelKeyInfo.setText(keyText.length()+"");
 
-						switch (keyDisplay)
+						/*switch (keyDisplay)
 						{
-							case TEXT:
+							case TEXT:*/
 								key = new Key(keyText.substring(0, keyText.length()-1), keyLength, keyDisplay);
-								break;
+								/*break;
 							case BIN:
 								key = new Key(keyLength);
 								break;
 							case HEX:
 								key = new Key(keyLength);
 								break;
-						}
+						}*/
 
 						//labelKeyInfo.setText(keyText.length()+"aa");
 						//plainTextArea.setText(key.getKeyText());
@@ -281,8 +277,10 @@ public class Cryptography3DES
 		radioButtonText.addActionListener(arg0 ->
 		{
 			keyDisplay = Key.Display.TEXT;
-			keyTextField.setText(key == null ? "" : key.getKeyText());
+			//String temp = (key != null ? key.getKeyText() : "");
+			keyTextField.setText("");
 			KeyFormatter.setFormatter(keyLength, keyDisplay, keyTextField);
+			//keyTextField.setText(temp);
 		});
 		radioButtonText.setSelected(true);
 		groupKeyDisplay.add(radioButtonText);
@@ -291,8 +289,10 @@ public class Cryptography3DES
 		radioButtonBin.addActionListener(arg0 ->
 		{
 			keyDisplay = Key.Display.BIN;
-			keyTextField.setText(key == null ? "" : key.getKeyBinary());
+			String temp = (key != null ? key.getKeyBinary() : "");
+			keyTextField.setText("");
 			KeyFormatter.setFormatter(keyLength, keyDisplay, keyTextField);
+			keyTextField.setText(temp);
 		});
 		groupKeyDisplay.add(radioButtonBin);
 
@@ -300,8 +300,10 @@ public class Cryptography3DES
 		radioButtonHex.addActionListener(arg0 ->
 		{
 			keyDisplay = Key.Display.HEX;
-			keyTextField.setText(key == null ? "" : key.getKeyHexadecimal());
+			String temp = (key != null ? key.getKeyHexadecimal() : "");
+			keyTextField.setText("");
 			KeyFormatter.setFormatter(keyLength, keyDisplay, keyTextField);
+			keyTextField.setText(temp);
 		});
 		groupKeyDisplay.add(radioButtonHex);
 
@@ -329,7 +331,7 @@ public class Cryptography3DES
 
 		menuBar.add(menuInfo);
 
-		menuItemAuthors.addActionListener(arg0 -> JOptionPane.showMessageDialog(null, "Michał Kidawa, 000000\nJakub Szubka, 000000\nTomasz Witczak, 216920", "Autorzy", JOptionPane.PLAIN_MESSAGE));
+		menuItemAuthors.addActionListener(arg0 -> JOptionPane.showMessageDialog(null, "Michał Kidawa, 216796\nJakub Szubka, 216901\nTomasz Witczak, 216920", "Autorzy", JOptionPane.PLAIN_MESSAGE));
 		menuInfo.add(menuItemAuthors);
 
 
