@@ -112,14 +112,152 @@ public class AlgorithmDES
 		StringBuilder cipherText = new StringBuilder();
 
 		for(int i = 0; i < blocks.length; i++)
-			cipherText.append(new String(blocks[i].bits, StandardCharsets.UTF_8));
+			for(int j = 0; j < 8; j++)
+				cipherText.append((char)(blocks[i].bits[j] & 0xFF));
 
 		return cipherText.toString();
 	}
 
 	public String Decrypt(String ciphertext, Key key)
 	{
-		return ciphertext;
+		// Set key based on encryption
+		// Erase parity bits from key (64-bit to 56-bit)
+		Block56 key56 = permutationPC1(key.getKeyAsBlock());
+
+		// Divide key block into two halves (28-bit, but using 32-bit block
+		//  and ignoring 4 last)
+		Block32 leftKey = new Block32();
+		Block32 rightKey = new Block32();
+
+		for(int i = 0; i < 56; i++)
+			if(i < 28)
+				leftKey.setBit(i, key56.getBit(i));
+			else
+				rightKey.setBit(i - 28, key56.getBit(i));
+
+		// Feistel functions (16 iterations)
+		for(int i = 0; i < 16; i++)
+		{
+			// Move key bits left (1 or 2 bits accordingly)
+			for(int j = 0; j < ((i == 0 || i == 1 || i == 8 || i == 15) ? 1 : 2); j++)
+			{
+				moveBitsLeft28(leftKey);
+				moveBitsLeft28(rightKey);
+			}
+		}
+
+		//---------------------------------------------------------------------
+		Block[] blocks = divBlocks(ciphertext);
+
+		for(Block block : blocks)
+		{
+			// Initial permutation
+			permutationStart(block);
+
+			// Divide main block into two halves (32-bit)
+			Block32 leftBlock32 = new Block32();
+			Block32 rightBlock32 = new Block32();
+
+			for(int i = 0; i < 4; i++)
+			{
+				rightBlock32.bits[i] = block.bits[i];
+				leftBlock32.bits[i] = block.bits[i + 4];
+			}
+
+			/*// Erase parity bits from key (64-bit to 56-bit)
+			Block56 key56 = permutationPC1(key.getKeyAsBlock());
+
+			// Divide key block into two halves (28-bit, but using 32-bit block
+			//  and ignoring 4 last)
+			Block32 leftKey = new Block32();
+			Block32 rightKey = new Block32();
+
+			for(int i = 0; i < 56; i++)
+				if(i < 28)
+					leftKey.setBit(i, key56.getBit(i));
+
+				else
+					rightKey.setBit(i - 28, key56.getBit(i));*/
+
+			// Feistel functions (16 iterations)
+			for(int i = 0; i < 16; i++)
+			{
+				// Copy of left block
+				Block32 copyLeftBlock32 = new Block32();
+
+				for(int k = 0; k < 4; k++)
+					copyLeftBlock32.bits[k] = leftBlock32.bits[k];
+
+				// Move key bits right (1 or 2 bits accordingly)
+				for(int j = 0; j < ((i == 0 || i == 7 || i == 14 || i == 15) ? 1 : 2); j++)
+				{
+					moveBitsRight28(leftKey);
+					moveBitsRight28(rightKey);
+				}
+
+				// Choose 48 bits from already moved key
+				Block48 key48 = permutationPC2(leftKey, rightKey);
+
+				// Expand data block from 32 bits to 48 bits
+				Block48 rightBlock48 = permutationExpandTo48bits(rightBlock32);
+
+				// XOR right data block with 48-bit key
+				for(int k = 0; k < 6; k++)
+					rightBlock48.bits[k] ^= key48.bits[k];
+
+				// Divide data into 6-bit blocks
+				Block8[] block6Table = new Block8[8];
+				for(int k = 0; k < 8; k++)
+					block6Table[k] = new Block8();
+
+				for(int q = 0; q < 48; q++)
+					block6Table[q / 6].setBit(q % 6, rightBlock48.getBit(q));
+
+				Block8[] block4Table = new Block8[8];
+				for(int k = 0; k < 8; k++)
+					block4Table[k] = new Block8();
+
+				for(int q = 0; q < 32; q++)
+					block4Table[q / 4] = sBox(q / 4, block6Table[q / 4]);
+
+				// Merge data from S-Boxes into 32-bit right main block
+				for(int q = 0; q < 32; q++)
+					rightBlock32.setBit(q, block4Table[q / 4].getBit((q % 4) + 4));
+
+				// Permutation P-Blocks
+				rightBlock32 = permutationPBlock(rightBlock32);
+
+				// XOR left and right halves
+				for(int k = 0; k < 4; k++)
+					leftBlock32.bits[k] ^= rightBlock32.bits[k];
+
+				// Swap left and right blocks
+				for(int k = 0; k < 4; k++)
+				{
+					leftBlock32.bits[k] = rightBlock32.bits[k];
+					rightBlock32.bits[k] = copyLeftBlock32.bits[k];
+				}
+			}
+
+			// Merge 32-bit data halves
+			for(int i = 0; i < 32; i++)
+			{
+				block.setBit(i, leftBlock32.getBit(i));
+				block.setBit(i + 32, rightBlock32.getBit(i));
+			}
+
+			// Final permutation
+			permutationFinal(block);
+		}
+
+		// Merge all blocks into final String
+		StringBuilder plainText = new StringBuilder();
+
+		for(int i = 0; i < blocks.length; i++)
+			for(int j = 0; j < 8; j++)
+				plainText.append((char)(blocks[i].bits[j] & 0xFF));
+
+		return plainText.toString();
 	}
 
 
@@ -249,6 +387,16 @@ public class AlgorithmDES
 			block28.setBit(i, block28.getBit(i + 1));
 
 		block28.setBit(27, orphanBit);
+	}
+
+	void moveBitsRight28(Block32 block28)
+	{
+		boolean orphanBit = block28.getBit(27);
+
+		for(int i = 26; i > 0; i--)
+			block28.setBit(i, block28.getBit(i - 1));
+
+		block28.setBit(0, orphanBit);
 	}
 
 	Block8 sBox(int n, Block8 input)
