@@ -112,7 +112,7 @@ public class Cryptography3DES
 		// > Buttons
 		buttonEncrypt.addActionListener(arg0 ->
 		{
-				cipherTextArea.setText(algorithmDES.Encrypt(plainTextArea.getText(), key));
+				cipherTextArea.setText(algorithmDES.Encrypt(plainTextArea.getText().substring(0, plainTextArea.getText().length() - 1), key));
 		});
 		buttonEncrypt.setFont(font2);
 		buttonEncrypt.setPreferredSize(new Dimension(200, 40));
@@ -123,6 +123,10 @@ public class Cryptography3DES
 		buttonEncrypt.setOpaque(true);
 		contentPane.add(buttonEncrypt, "flowx,cell 1 6,growx,aligny center");
 
+		buttonDecrypt.addActionListener(arg0 ->
+		{
+			plainTextArea.setText(algorithmDES.Decrypt(cipherTextArea.getText().substring(0, cipherTextArea.getText().length() - 1), key));
+		});
 		buttonDecrypt.setFont(font2);
 		buttonDecrypt.setPreferredSize(new Dimension(200, 40));
 		buttonDecrypt.setBorder(BorderFactory.createLineBorder(color4, 1));
