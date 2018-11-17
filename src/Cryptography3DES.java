@@ -1,59 +1,52 @@
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Imports
-// - MigLayout
-
+import cryptography.*;
 import net.miginfocom.swing.MigLayout;
-
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.text.DefaultFormatterFactory;
-import javax.swing.text.MaskFormatter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-
-// - Swing
-//import Key.KeyLength;
-// - Awt
-
+import java.io.File;
+import java.nio.file.Files;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Main class
-public class Cryptography3DES
+class Cryptography3DES
 		extends JFrame
 {
-	// Fields
-	// > constant button groups
-	private final ButtonGroup groupKeyDisplay = new ButtonGroup();
-	private final ButtonGroup groupKeyLength = new ButtonGroup();
-	// > used colors
-	private final Color color1 = new Color(0x606060);
-	private final Color color2 = new Color(0x3C3C3C);
-	private final Color color3 = new Color(0xFAFAFA);
-	private final Color color4 = new Color(0xC0C0C0);
-	private final Color color5 = new Color(0xCC0000);
-	// > used fonts
-	private final Font font1 = new Font("Courier New", Font.PLAIN, 12);
-	private final Font font2 = new Font(Font.SANS_SERIF, Font.BOLD, 12);
-	// > key parameters
-	private Key.KeyLength keyLength = Key.KeyLength.LONG;
-	private Key.Display keyDisplay = Key.Display.TEXT;
-	// > key
-	private Key key = null;
+	//------------------------------------------------------------------------------------------------------------- Main
+	public static void main(String[] args)
+	{
+		System.setProperty("file.encoding", "UTF-8");
+		// Set non-default feel
+		try
+		{
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		}
+		catch (Exception exception)
+		{
+			exception.printStackTrace();
+		}
 
-	AlgorithmDES algorithmDES = new AlgorithmDES();
-	/**
-	 * Create the frame.
-	 */
-	public Cryptography3DES()
+		// Set event queue and run application
+		EventQueue.invokeLater(() ->
+		{
+			try
+			{
+				Cryptography3DES frame = new Cryptography3DES();
+				frame.setVisible(true);
+			}
+			catch (Exception exception)
+			{
+				exception.printStackTrace();
+			}
+		});
+	}
+
+	//------------------------------------------------------------------------------------------------------ Constructor
+	private Cryptography3DES()
 	{
 		// Set frame details
 		setTitle("Szyfrowanie/Deszyfrowanie - Algorytm 3DES");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(200, 200, 800, 600);
+		setBounds(200, 200, 1200, 800);
 
 		// All contents
 		JPanel contentPane = new JPanel();
@@ -112,7 +105,15 @@ public class Cryptography3DES
 		// > Buttons
 		buttonEncrypt.addActionListener(arg0 ->
 		{
-				cipherTextArea.setText(algorithmDES.Encrypt(plainTextArea.getText().substring(0, plainTextArea.getText().length() - 1), key));
+			try
+			{
+				if(!plainTextArea.getText().equals(""))
+					cipherTextArea.setText(algorithm3DES.encrypt(plainTextArea.getText(), key));
+			}
+			catch(Exception exception)
+			{
+				//exception.printStackTrace();//JOptionPane.showMessageDialog(null, exception.getMessage(), "Błąd!", JOptionPane.ERROR_MESSAGE);
+			}
 		});
 		buttonEncrypt.setFont(font2);
 		buttonEncrypt.setPreferredSize(new Dimension(200, 40));
@@ -125,7 +126,15 @@ public class Cryptography3DES
 
 		buttonDecrypt.addActionListener(arg0 ->
 		{
-			plainTextArea.setText(algorithmDES.Decrypt(cipherTextArea.getText().substring(0, cipherTextArea.getText().length() - 1), key));
+			try
+			{
+				if(!cipherTextArea.getText().equals(""))
+					plainTextArea.setText(algorithm3DES.decrypt(cipherTextArea.getText(), key));
+			}
+			catch(Exception exception)
+			{
+				//exception.printStackTrace();//JOptionPane.showMessageDialog(null, exception.getMessage(), "Błąd!", JOptionPane.ERROR_MESSAGE);
+			}
 		});
 		buttonDecrypt.setFont(font2);
 		buttonDecrypt.setPreferredSize(new Dimension(200, 40));
@@ -142,7 +151,6 @@ public class Cryptography3DES
 		keyTextField.setForeground(color3);
 		keyTextField.setBackground(color1);
 		keyTextField.setFont(font1);
-		keyTextField.setToolTipText("klucz");
 		keyTextField.setBorder(BorderFactory.createLineBorder(color4, 1));
 		contentPane.add(keyTextField, "cell 1 0,grow");
 		keyTextField.setColumns(10);
@@ -153,29 +161,29 @@ public class Cryptography3DES
 			{
 				checkKey(e);
 			}
-
 			public void removeUpdate(DocumentEvent e)
 			{
 				checkKey(e);
 			}
-
 			public void insertUpdate(DocumentEvent e)
 			{
 				checkKey(e);
 			}
 
-			public void checkKey(DocumentEvent event)
+			void checkKey(DocumentEvent event)
 			{
 				// Check for any placeholders in key
 				try
 				{
-					String keyText = event.getDocument().getText(event.getDocument().getStartPosition().getOffset(), event.getDocument().getEndPosition().getOffset());
+					String keyText = event.getDocument().getText(event.getDocument().getStartPosition().getOffset(),
+							event.getDocument().getEndPosition().getOffset());
 					if (keyText.contains("\u02FD"))
 					{
 						labelKeyInfo.setText("Wpisz klucz " + keyLength.bits + " bitowy!");
 						buttonEncrypt.setEnabled(false);
 						buttonDecrypt.setEnabled(false);
 						plainTextArea.setEnabled(false);
+						cipherTextArea.setEnabled(false);
 						menuItemEncryptFile.setEnabled(false);
 						menuItemDecryptFile.setEnabled(false);
 
@@ -187,40 +195,23 @@ public class Cryptography3DES
 						buttonEncrypt.setEnabled(true);
 						buttonDecrypt.setEnabled(true);
 						plainTextArea.setEnabled(true);
+						cipherTextArea.setEnabled(true);
 						menuItemEncryptFile.setEnabled(true);
 						menuItemDecryptFile.setEnabled(true);
 
-						//labelKeyInfo.setText(keyText.length()+"");
-
-						/*switch (keyDisplay)
-						{
-							case TEXT:*/
-								key = new Key(keyText.substring(0, keyText.length()-1), keyLength, keyDisplay);
-								/*break;
-							case BIN:
-								key = new Key(keyLength);
-								break;
-							case HEX:
-								key = new Key(keyLength);
-								break;
-						}*/
-
-						//labelKeyInfo.setText(keyText.length()+"aa");
-						//plainTextArea.setText(key.getKeyText());
+						key = new Key(keyText.substring(0, keyText.length()-1), keyLength, keyDisplay);
 					}
 				}
-				catch (Exception e)
+				catch (Exception exception)
 				{
-					//labelKeyInfo.setEnabled(true);
-					//JOptionPane.showMessageDialog(null, e.getMessage(), "", JOptionPane.ERROR_MESSAGE);
-					//try{String keyText = event.getDocument().getText(event.getDocument().getStartPosition().getOffset(), event.getDocument().getEndPosition().getOffset());
-					//labelKeyInfo.setText(keyText.length()+"www");}catch(Exception ea) {labelKeyInfo.setText("fuck");}
-					//plainTextArea.setText(e.getMessage());
+					//exception.printStackTrace();JOptionPane.showMessageDialog(null, exception.getMessage(), "Błąd",
+							//JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		});
 
 		plainTextArea.setCaretColor(getForeground());
+		plainTextArea.setLineWrap(true);
 		plainTextArea.setFont(font1);
 		plainTextArea.setForeground(color3);
 		plainTextArea.setBackground(color1);
@@ -228,6 +219,7 @@ public class Cryptography3DES
 		contentPane.add(plainTextArea, "cell 1 2,grow");
 
 		cipherTextArea.setCaretColor(getForeground());
+		cipherTextArea.setLineWrap(true);
 		cipherTextArea.setForeground(color3);
 		cipherTextArea.setBackground(color1);
 		cipherTextArea.setFont(font1);
@@ -240,8 +232,12 @@ public class Cryptography3DES
 		menuBar.add(menuFile);
 
 		menuFile.add(menuItemEncryptFile);
+		menuItemEncryptFile.addActionListener(arg0 ->
+				encryptFile(true));
 
 		menuFile.add(menuItemDecryptFile);
+		menuItemDecryptFile.addActionListener(arg0 ->
+				encryptFile(false));
 
 		menuBar.add(menuKey);
 
@@ -281,10 +277,17 @@ public class Cryptography3DES
 		radioButtonText.addActionListener(arg0 ->
 		{
 			keyDisplay = Key.Display.TEXT;
-			//String temp = (key != null ? key.getKeyText() : "");
+			String temp = "";//(key != null ? key.getKeyText() : "");
 			keyTextField.setText("");
 			KeyFormatter.setFormatter(keyLength, keyDisplay, keyTextField);
+			key = null;
 			//keyTextField.setText(temp);
+			/*try
+			{
+				if(key != null)
+					key = new Key(keyTextField.getText().substring(0, keyTextField.getText().length() - 1), keyLength, keyDisplay);
+			}
+			catch(Exception exception) {}*/
 		});
 		radioButtonText.setSelected(true);
 		groupKeyDisplay.add(radioButtonText);
@@ -293,10 +296,17 @@ public class Cryptography3DES
 		radioButtonBin.addActionListener(arg0 ->
 		{
 			keyDisplay = Key.Display.BIN;
-			String temp = (key != null ? key.getKeyBinary() : "");
+			String temp = "";// (key != null ? key.getKeyBinary() : "");
 			keyTextField.setText("");
 			KeyFormatter.setFormatter(keyLength, keyDisplay, keyTextField);
-			keyTextField.setText(temp);
+			key = null;
+			//keyTextField.setText(temp);
+			/*try
+			{
+				if(key != null)
+					key = new Key(keyTextField.getText().substring(0, keyTextField.getText().length() - 1), keyLength, keyDisplay);
+			}
+			catch(Exception exception) {}*/
 		});
 		groupKeyDisplay.add(radioButtonBin);
 
@@ -304,10 +314,17 @@ public class Cryptography3DES
 		radioButtonHex.addActionListener(arg0 ->
 		{
 			keyDisplay = Key.Display.HEX;
-			String temp = (key != null ? key.getKeyHexadecimal() : "");
+			String temp = "";//(key != null ? key.getKeyHexadecimal() : "");
 			keyTextField.setText("");
 			KeyFormatter.setFormatter(keyLength, keyDisplay, keyTextField);
-			keyTextField.setText(temp);
+			key = null;
+			//keyTextField.setText(temp);
+			/*try
+			{
+				if(key != null)
+					key = new Key(keyTextField.getText().substring(0, keyTextField.getText().length() - 1), keyLength, keyDisplay);
+			}
+			catch(Exception exception) {}*/
 		});
 		groupKeyDisplay.add(radioButtonHex);
 
@@ -331,46 +348,74 @@ public class Cryptography3DES
 					break;
 			}
 			keyTextField.setText(keyToTextField);
+			key = randomKey;
 		});
 
 		menuBar.add(menuInfo);
 
 		menuItemAuthors.addActionListener(arg0 -> JOptionPane.showMessageDialog(null, "Michał Kidawa, 216796\nJakub Szubka, 216901\nTomasz Witczak, 216920", "Autorzy", JOptionPane.PLAIN_MESSAGE));
 		menuInfo.add(menuItemAuthors);
-
-
-		// Events
-
 	}
 
-	// Main
-	public static void main(String[] args)
+	//----------------------------------------------------------------------------------------------- Additional methods
+	private void encryptFile(boolean encryption)
 	{
-		// Set system feel
-		try
-		{
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		}
-		catch (Exception exception)
-		{
-			exception.printStackTrace();
-		}
+		JFileChooser fileChooser = new JFileChooser();
+		int chosenOption;
+		File inputFile, outputFile;
+		byte[] inputBytes, outputBytes;
 
-		// Set event queue and run application
-		EventQueue.invokeLater(() ->
+		fileChooser.setDialogTitle("Wybierz plik źródłowy");
+		chosenOption = fileChooser.showOpenDialog(null);
+		if(chosenOption == JFileChooser.APPROVE_OPTION)
 		{
-			try
+			inputFile = fileChooser.getSelectedFile();
+
+			fileChooser.setDialogTitle("Wybierz plik docelowy");
+			chosenOption = fileChooser.showOpenDialog(null);
+			if(chosenOption == JFileChooser.APPROVE_OPTION)
 			{
-				Cryptography3DES frame = new Cryptography3DES();
-				frame.setVisible(true);
+
+				outputFile = fileChooser.getSelectedFile();
+
+				try
+				{
+					inputBytes = Files.readAllBytes(inputFile.toPath());
+
+					if(encryption)
+						outputBytes = algorithm3DES.encrypt(inputBytes, key);
+					else
+						outputBytes = algorithm3DES.decrypt(inputBytes, key);
+
+					Files.write(outputFile.toPath(), outputBytes);
+				}
+				catch (Exception exception)
+				{
+					exception.printStackTrace();
+				}
 			}
-			catch (Exception exception)
-			{
-				exception.printStackTrace();
-			}
-		});
+		}
 	}
 
+	//----------------------------------------------------------------------------------------------------------- Fields
+	// > constant button groups
+	private final ButtonGroup groupKeyDisplay = new ButtonGroup();
+	private final ButtonGroup groupKeyLength = new ButtonGroup();
+	// > used colors
+	private final Color color1 = new Color(0x606060);
+	private final Color color2 = new Color(0x3C3C3C);
+	private final Color color3 = new Color(0xFAFAFA);
+	private final Color color4 = new Color(0xC0C0C0);
+	private final Color color5 = new Color(0xCC0000);
+	// > used fonts
+	private final Font font1 = new Font(Font.MONOSPACED, Font.PLAIN, 12);
+	private final Font font2 = new Font(Font.SANS_SERIF, Font.BOLD, 12);
+	// > key parameters
+	private Key.KeyLength keyLength = Key.KeyLength.LONG;
+	private Key.Display keyDisplay = Key.Display.TEXT;
+	// > key
+	private Key key = null;
+	// > 3DES encryptor
+	private final Algorithm3DES algorithm3DES = new Algorithm3DES();
 }
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
